@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}html,body{height:100%}body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}</style>
+</head>
+<body>
+<title>¿Qué auto va contigo?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: una columna de 560px, una pregunta por pantalla; barra tipo indicador de gasolina E→F arriba. */
+:root{
+  --bg:#F2F5F6; --surface:#FFFFFF; --ink:#13202A; --muted:#566874; --line:#D3DCE1;
+  --accent:#0B6B7C; --accent-ink:#FFFFFF; --amber:#C97A10; --chip:#E4EDF0; --danger:#B3261E;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E161C; --surface:#16212A; --ink:#E6EDF1; --muted:#91A3AF; --line:#283945;
+  --accent:#3DB3C6; --accent-ink:#06141A; --amber:#F0A53A; --chip:#1C2B34; --danger:#F2867E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E161C; --surface:#16212A; --ink:#E6EDF1; --muted:#91A3AF; --line:#283945;
+  --accent:#3DB3C6; --accent-ink:#06141A; --amber:#F0A53A; --chip:#1C2B34; --danger:#F2867E; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:560px;margin:0 auto;padding-inline:18px;padding-block:20px 40px;display:flex;flex-direction:column;gap:22px;min-height:100%}
+
+/* Indicador de gasolina */
+.gauge{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.gauge .segs{flex:1;display:grid;gap:3px}
+.gauge .seg{height:8px;border-radius:2px;background:var(--line);transition:background .25s}
+.gauge .seg.on{background:var(--accent)}
+.gauge .seg.on.last{background:var(--amber)}
+.gauge b{font-weight:600;color:var(--ink)}
+
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1,h2{font-family:var(--f-display);font-stretch:118%;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(34px,9vw,52px);font-weight:850;line-height:1.02}
+h2{font-size:clamp(23px,6vw,30px);font-weight:750;line-height:1.12}
+p{margin:0}
+.lead{color:var(--muted);font-size:17px;max-width:62ch}
+.hint{color:var(--muted);font-size:14px;margin-top:6px}
+
+/* Opciones */
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{all:unset;box-sizing:border-box;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;
+  width:100%;padding:14px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;
+  transition:border-color .15s,background .15s,transform .1s}
+.opt:hover{border-color:var(--accent)}
+.opt:active{transform:scale(.99)}
+.opt:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.opt .k{font-family:var(--f-mono);font-weight:600;font-size:14px;width:34px;height:34px;border-radius:8px;
+  display:grid;place-items:center;background:var(--chip);color:var(--ink)}
+.opt .l{font-weight:600;line-height:1.3;min-width:0}
+.opt .s{display:block;font-weight:400;font-size:14px;color:var(--muted);margin-top:2px}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+.opt[aria-pressed="true"] .k{background:var(--accent);color:var(--accent-ink)}
+
+/* Botones */
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:17px;
+  padding:14px 22px;border-radius:999px;background:var(--accent);color:var(--accent-ink);text-align:center}
+.btn:focus-visible,.ghost:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.btn.block{display:block;width:100%}
+.ghost{all:unset;cursor:pointer;font-size:15px;color:var(--muted);padding:8px 2px;text-decoration:underline;text-underline-offset:3px}
+.ghost:hover{color:var(--ink)}
+
+/* Intro */
+.intro-meta{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.intro-meta span b{color:var(--ink)}
+.road{height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,var(--amber) 0 22px,transparent 22px 40px);opacity:.85}
+
+/* Formulario */
+form{display:flex;flex-direction:column;gap:16px}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:15px}
+label.f small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=tel]{font:inherit;padding:13px 14px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+input:focus-visible{outline:3px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.check{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;font-size:14px;color:var(--muted)}
+.check input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--accent)}
+.check a{color:var(--accent)}
+.err{color:var(--danger);font-size:14px;font-weight:600}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* Resultado */
+.badge{display:inline-flex;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--ink)}
+.badge i{width:8px;height:8px;border-radius:50%;background:var(--amber);display:block}
+.ficha{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;overflow:hidden}
+.ficha header{padding:12px 16px;border-bottom:1.5px solid var(--line);display:flex;justify-content:space-between;gap:10px;font-family:var(--f-mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.ficha dl{margin:0;display:grid;grid-template-columns:auto 1fr}
+.ficha dt,.ficha dd{margin:0;padding:11px 16px;border-bottom:1px solid var(--line)}
+.ficha dt{color:var(--muted);font-size:14px}
+.ficha dd{font-weight:600;text-align:right;min-width:0}
+.ficha dl > :nth-last-child(-n+2){border-bottom:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips span{padding:7px 12px;border-radius:999px;background:var(--chip);font-size:14px;font-weight:500}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:1fr 46px;gap:4px 10px;align-items:center;font-size:14px}
+.bar .track{grid-column:1 / -1;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:4px}
+.bar:first-child .fill{background:var(--amber)}
+.bar .pct{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--muted)}
+.note{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:14px}
+.sec-title{font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:17px;margin:0 0 10px}
+
+/* QR */
+.qrbox{background:#fff;padding:18px;border-radius:14px;align-self:center;border:1.5px solid var(--line)}
+.qrbox img,.qrbox canvas{display:block;width:min(70vw,280px);height:auto}
+.mono{font-family:var(--f-mono);font-size:13px;word-break:break-all;color:var(--muted)}
+
+.screen{display:flex;flex-direction:column;gap:22px;animation:in .28s ease-out both}
+@keyframes in{from{transform:translateY(6px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.screen{animation:none}.gauge .seg,.opt{transition:none}}
+footer{margin-top:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+footer a{color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <div class="gauge" id="gauge" aria-hidden="true"><b>E</b><div class="segs" id="segs"></div><b>F</b></div>
+  <main id="app" aria-live="polite"></main>
+  <footer><span id="build"></span><a href="#qr" id="qrlink">QR para imprimir</a></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ===================== CONFIGURACIÓN ===================== */
+const CONFIG = {
+  APP_BUILD: "2026.10.13-1",
+  BRAND: "Tu agencia",                 // nombre que ve el cliente
+  SUPABASE_URL: "https://jbljqomqzvqvngrhavqf.supabase.co/rest/v1/",                    // ej. https://xxxx.supabase.co  (vacío = modo demo, no guarda)
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibGpxb21xenZxdm5ncmhhdnFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzkyMTAsImV4cCI6MjEwNzUxNTIxMH0.kiFQjAGcqYRiA5I_BageVp5E0d1_xjBjVrtZjWkEaoY",               // anon key (solo permite INSERT por RLS)
+  TABLE: "encuestas_auto",
+  SURVEY_URL: "",                      // URL pública final; si va vacío, el QR usa la URL actual
+  PRIVACY_URL: "#"                     // liga a tu aviso de privacidad (LFPDPPP)
+};
+
+/* ===================== PERFILES ===================== */
+const PERFILES = {
+  urb:{n:"Urbano eficiente",   d:"Buscas un auto ágil, fácil de estacionar y barato de mantener para el día a día.",
+       ej:["Nissan Versa","Chevrolet Aveo","Kia K3","Mazda 2","BYD Dolphin Mini"]},
+  fam:{n:"Familiar práctico",  d:"Espacio, seguridad y confort para moverte con los tuyos sin sacrificar confiabilidad.",
+       ej:["Honda CR-V","Toyota RAV4 Híbrida","Mazda CX-5","Kia Sportage","Hyundai Tucson"]},
+  tra:{n:"Trabajo y aventura", d:"Necesitas resistencia, capacidad de carga y tracción para cualquier camino.",
+       ej:["Toyota Hilux","Nissan Frontier","Ford Ranger","RAM 700","Jeep Wrangler"]},
+  dep:{n:"Pasión al volante",  d:"Para ti manejar es el plan: respuesta del motor, manejo preciso y carretera.",
+       ej:["Mazda MX-5","Volkswagen Golf GTI","Ford Mustang","Toyota GR86","Mini Cooper S"]},
+  pre:{n:"Ejecutivo premium",  d:"Valoras diseño, refinamiento y estatus; pagas con gusto por la experiencia.",
+       ej:["BMW Serie 3","Mercedes-Benz GLC","Audi Q5","Volvo XC60","Lexus NX"]},
+  tec:{n:"Tecnológico electrificado", d:"Te mueven la eficiencia, las pantallas y la conectividad; estás abierto a marcas nuevas.",
+       ej:["BYD Song Plus","Tesla Model Y","MG4","Chirey Tiggo 7","GWM Haval H6 HEV"]}
+};
+
+/* ===================== PREGUNTAS =====================
+   w = puntos que suma cada opción a cada perfil. Sin w = solo informativa (calificación del lead). */
+const Q = [
+ {id:"presupuesto", t:"¿Cuál es tu presupuesto real para el auto?", h:"Precio total aproximado, en pesos.", o:[
+  {k:"A",l:"Lo más accesible posible",s:"Hasta ~$400 mil, o mensualidades bajas",w:{urb:3,fam:1,tec:1}},
+  {k:"B",l:"Buena relación valor-precio",s:"Entre $400 y $800 mil",w:{fam:2,tec:2,tra:1,dep:1,urb:1}},
+  {k:"C",l:"Me quiero dar un gusto",s:"Más de $800 mil, gama alta o premium",w:{pre:3,dep:2,tra:1}}]},
+ {id:"uso", t:"¿Cuál será el uso principal del auto?", o:[
+  {k:"A",l:"Ciudad diario",s:"Tráfico, ir al trabajo y estacionarme fácil",w:{urb:3,tec:1}},
+  {k:"B",l:"Familia",s:"Niños, mascotas o mucho equipaje",w:{fam:3}},
+  {k:"C",l:"Trabajo o aventura",s:"Carga, terracería, salir al monte",w:{tra:3}},
+  {k:"D",l:"Disfrutar la carretera",s:"Manejar por gusto los fines de semana",w:{dep:3,pre:1}}]},
+ {id:"consumo", t:"En consumo de combustible, ¿qué prefieres?", o:[
+  {k:"A",l:"Gastar lo mínimo",s:"O que sea híbrido o eléctrico",w:{urb:2,tec:3}},
+  {k:"B",l:"Equilibrado",s:"Me importa el ahorro, pero que responda bien",w:{fam:2,urb:1,pre:1}},
+  {k:"C",l:"Potencia primero",s:"No me preocupa la gasolina",w:{dep:2,tra:2,pre:1}}]},
+ {id:"mantenimiento", t:"En mantenimiento y refacciones, ¿qué buscas?", o:[
+  {k:"A",l:"Servicios baratos",s:"Piezas que se consigan en cualquier lado",w:{urb:2,tra:2}},
+  {k:"B",l:"Precios normales de agencia",s:"Lo necesario para mantener la garantía",w:{fam:2,tec:1}},
+  {k:"C",l:"Pago por exclusividad",s:"Servicio caro está bien si hay lujo",w:{pre:3,dep:1}}]},
+ {id:"reventa", t:"¿Qué tan importante es el valor de reventa?", o:[
+  {k:"A",l:"Vital",s:"Que no se devalúe y se venda fácil",w:{urb:2,fam:2,tra:2}},
+  {k:"B",l:"Moderado",s:"Que conserve precio, pero priorizo disfrutarlo",w:{dep:1,pre:1,fam:1}},
+  {k:"C",l:"Poco importante",s:"Me lo quedo años o priorizo la tecnología",w:{tec:3,pre:1}}]},
+ {id:"seguridad", t:"¿Qué elemento de seguridad es indispensable para ti?", o:[
+  {k:"A",l:"Lo básico",s:"Bolsas de aire, ABS y control de estabilidad",w:{urb:2,tra:1}},
+  {k:"B",l:"5 estrellas y asistencias",s:"Frenado autónomo, punto ciego, carril",w:{fam:3,tec:1,pre:1}},
+  {k:"C",l:"Tracción integral",s:"AWD o 4x4",w:{tra:3,pre:1}},
+  {k:"D",l:"Blindaje",s:"Protección personal",w:{pre:3}}]},
+ {id:"superpoder", t:"Si tu auto tuviera un superpoder, ¿cuál sería?", o:[
+  {k:"A",l:"Indestructible",s:"Que nunca se descomponga",w:{tra:2,urb:1,fam:1}},
+  {k:"B",l:"Tecnología total",s:"Pantallas, conectividad y luces LED",w:{tec:3,pre:1}},
+  {k:"C",l:"Potencia",s:"Que acelere fuerte y sea divertido",w:{dep:3}},
+  {k:"D",l:"Confort",s:"Alto, cómodo y espacioso",w:{fam:2,pre:2}}]},
+ {id:"transmision", t:"¿Qué transmisión prefieres?", o:[
+  {k:"A",l:"Manual (estándar)",s:"Control total",w:{dep:2,tra:2,urb:1}},
+  {k:"B",l:"Automática",s:"Para no cansarme en el tráfico",w:{urb:2,fam:2,tec:1,pre:1}},
+  {k:"C",l:"Automática con paletas",s:"Manejo más deportivo",w:{dep:2,pre:2}}]},
+ {id:"marca", t:"Al elegir marca, ¿qué te da más confianza?", o:[
+  {k:"A",l:"Las de toda la vida",s:"Japonesas o americanas con reputación",w:{urb:2,fam:2,tra:2}},
+  {k:"B",l:"Europeas",s:"Diseño, estatus y manejo sofisticado",w:{pre:3,dep:1}},
+  {k:"C",l:"Nuevas y tecnológicas",s:"Marcas chinas o Tesla, precio competitivo",w:{tec:3}}]},
+ {id:"silueta", t:"¿Qué tipo de auto te llama más la atención?", o:[
+  {k:"A",l:"Compacto o hatchback",s:"Juvenil y práctico",w:{urb:3,tec:1}},
+  {k:"B",l:"Sedán",s:"Elegante y formal",w:{urb:1,pre:2}},
+  {k:"C",l:"SUV",s:"Alta, segura y familiar",w:{fam:3,pre:1,tec:1}},
+  {k:"D",l:"Pick-up",s:"Imponente y de trabajo",w:{tra:4}},
+  {k:"E",l:"Deportivo o coupé",s:"Bajo y rápido",w:{dep:4}}]},
+ {id:"cuando", t:"¿Cuándo planeas comprar?", h:"Nos ayuda a darte seguimiento a tu ritmo.", o:[
+  {k:"A",l:"Este mes"},{k:"B",l:"En 1 a 3 meses"},{k:"C",l:"En 3 a 6 meses"},{k:"D",l:"Solo estoy explorando"}]},
+ {id:"pago", t:"¿Cómo piensas pagarlo?", o:[
+  {k:"A",l:"De contado"},{k:"B",l:"Con crédito o financiamiento"},{k:"C",l:"Dando mi auto actual a cuenta"},{k:"D",l:"Todavía no lo sé"}]}
+];
+
+const FICHA = {
+  carroceria:{A:"Compacto / hatchback",B:"Sedán",C:"SUV",D:"Pick-up",E:"Deportivo / coupé"},
+  motor:{A:"Híbrido o eléctrico",B:"4 cil. eficiente / turbo",C:"Alto desempeño"},
+  transmision:{A:"Manual",B:"Automática",C:"Automática con paletas"},
+  presupuesto:{A:"Hasta ~$400 mil",B:"$400 – $800 mil",C:"Más de $800 mil"},
+  prioridad:{A:"Fiabilidad",B:"Tecnología",C:"Potencia",D:"Confort"}
+};
+const TEMP = {A:"caliente",B:"tibio",C:"frío",D:"frío"};
+
+/* ===================== LÓGICA ===================== */
+const KEYS = Object.keys(PERFILES);
+const MAX = Object.fromEntries(KEYS.map(p=>[p, Q.reduce((s,q)=>s+Math.max(0,...q.o.map(o=>(o.w||{})[p]||0)),0)]));
+
+function calcular(ans){
+  const raw = Object.fromEntries(KEYS.map(p=>[p,0]));
+  Q.forEach(q=>{const o=q.o.find(x=>x.k===ans[q.id]); if(o&&o.w) for(const p in o.w) raw[p]+=o.w[p];});
+  const pct = Object.fromEntries(KEYS.map(p=>[p, MAX[p]?Math.round(100*raw[p]/MAX[p]):0]));
+  const orden = KEYS.slice().sort((a,b)=>pct[b]-pct[a] || raw[b]-raw[a]);
+  return {raw,pct,orden};
+}
+
+const S = {screen:"intro", i:0, ans:{}, contacto:{}, res:null};
+const app = document.getElementById("app");
+const esc = s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const STEPS = Q.length + 1;
+
+function gauge(n){
+  const segs = document.getElementById("segs");
+  if(!segs.children.length){segs.style.gridTemplateColumns=`repeat(${STEPS},1fr)`;for(let i=0;i<STEPS;i++)segs.appendChild(document.createElement("div")).className="seg";}
+  [...segs.children].forEach((el,i)=>{el.classList.toggle("on",i<n);el.classList.toggle("last",i===n-1&&n===STEPS);});
+}
+
+function render(){
+  document.getElementById("gauge").hidden = (S.screen==="intro"||S.screen==="qr");
+  if(S.screen==="intro") return intro();
+  if(S.screen==="q") return pregunta();
+  if(S.screen==="contacto") return contacto();
+  if(S.screen==="resultado") return resultado();
+  if(S.screen==="qr") return qr();
+}
+
+function intro(){
+  app.innerHTML = `<section class="screen">
+    <span class="eyebrow">${esc(CONFIG.BRAND)} · Encuesta</span>
+    <h1>¿Qué auto va contigo?</h1>
+    <p class="lead">Contesta 12 preguntas rápidas y te decimos qué tipo de auto encaja con tu forma de manejar, tu presupuesto y tu día a día.</p>
+    <div class="road" aria-hidden="true"></div>
+    <div class="intro-meta"><span><b>12</b> preguntas</span><span><b>~2</b> min</span><span>Resultado al instante</span></div>
+    <button class="btn block" id="go">Empezar</button>
+  </section>`;
+  document.getElementById("go").onclick=()=>{S.screen="q";S.i=0;render();};
+}
+
+function pregunta(){
+  const q=Q[S.i], sel=S.ans[q.id];
+  gauge(S.i);
+  app.innerHTML = `<section class="screen">
+    <div><span class="eyebrow">Pregunta ${String(S.i+1).padStart(2,"0")} / ${Q.length}</span></div>
+    <div><h2 id="qt">${esc(q.t)}</h2>${q.h?`<p class="hint">${esc(q.h)}</p>`:""}</div>
+    <div class="opts" role="group" aria-labelledby="qt">
+      ${q.o.map(o=>`<button class="opt" data-k="${o.k}" aria-pressed="${sel===o.k}"><span class="k">${o.k}</span><span class="l">${esc(o.l)}${o.s?`<span class="s">${esc(o.s)}</span>`:""}</span></button>`).join("")}
+    </div>
+    <div class="row"><button class="ghost" id="back">← Anterior</button></div>
+  </section>`;
+  app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    S.ans[q.id]=b.dataset.k;
+    app.querySelectorAll(".opt").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    gauge(S.i+1);
+    setTimeout(()=>{ if(S.i<Q.length-1){S.i++;} else {S.screen="contacto";} render(); window.scrollTo(0,0); }, 200);
+  });
+  document.getElementById("back").onclick=()=>{ if(S.i>0){S.i--;} else {S.screen="intro";} render(); };
+}
+
+function contacto(){
+  gauge(Q.length);
+  const c=S.contacto;
+  app.innerHTML = `<section class="screen">
+    <span class="eyebrow">Último paso · opcional</span>
+    <div><h2>¿Quieres que un asesor te mande opciones?</h2>
+    <p class="hint">Si prefieres solo ver tu resultado, deja los campos vacíos.</p></div>
+    <form id="f" novalidate>
+      <label class="f" for="nombre">Nombre <small>opcional</small><input type="text" id="nombre" autocomplete="given-name" value="${esc(c.nombre||"")}"></label>
+      <label class="f" for="tel">WhatsApp <small>10 dígitos</small><input type="tel" id="tel" inputmode="numeric" autocomplete="tel" placeholder="312 123 4567" value="${esc(c.tel||"")}"></label>
+      <div class="hp" aria-hidden="true"><input type="text" id="empresa" tabindex="-1" autocomplete="off"></div>
+      <label class="check" for="ok"><input type="checkbox" id="ok"${c.ok?" checked":""}><span>Acepto que me contacten y el <a href="${esc(CONFIG.PRIVACY_URL)}" target="_blank" rel="noopener">aviso de privacidad</a>.</span></label>
+      <p class="err" id="err" hidden></p>
+      <button class="btn block" type="submit">Ver mi resultado</button>
+      <div class="row"><button class="ghost" type="button" id="back">← Anterior</button></div>
+    </form>
+  </section>`;
+  document.getElementById("back").onclick=()=>{S.screen="q";S.i=Q.length-1;render();};
+  document.getElementById("f").onsubmit=e=>{
+    e.preventDefault();
+    const nombre=document.getElementById("nombre").value.trim().slice(0,80);
+    let tel=document.getElementById("tel").value.replace(/\D/g,"");
+    if(tel.length===12&&tel.startsWith("52")) tel=tel.slice(2);
+    const ok=document.getElementById("ok").checked, err=document.getElementById("err");
+    S.contacto={nombre,tel,ok};
+    if(tel && tel.length!==10){err.textContent="El WhatsApp debe tener 10 dígitos. Revísalo o déjalo vacío.";err.hidden=false;return;}
+    if(tel && !ok){err.textContent="Para que te contactemos, marca la casilla del aviso de privacidad. Si no quieres contacto, deja el WhatsApp vacío.";err.hidden=false;return;}
+    if(document.getElementById("empresa").value) {S.bot=true;}
+    S.res=calcular(S.ans); S.screen="resultado"; render(); window.scrollTo(0,0);
+    enviar();
+  };
+}
+
+function resultado(){
+  gauge(STEPS);
+  const r=S.res, p=PERFILES[r.orden[0]], a=S.ans, demo=!CONFIG.SUPABASE_URL;
+  app.innerHTML = `<section class="screen">
+    <span class="badge"><i></i>Tu perfil de conductor</span>
+    <div><h1>${esc(p.n)}</h1><p class="lead" style="margin-top:10px">${esc(p.d)}</p></div>
+    <div class="ficha">
+      <header><span>Ficha de tu auto ideal</span><span>${r.pct[r.orden[0]]}% afinidad</span></header>
+      <dl>
+        <dt>Carrocería</dt><dd>${FICHA.carroceria[a.silueta]||"—"}</dd>
+        <dt>Motorización</dt><dd>${FICHA.motor[a.consumo]||"—"}</dd>
+        <dt>Transmisión</dt><dd>${FICHA.transmision[a.transmision]||"—"}</dd>
+        <dt>Presupuesto</dt><dd>${FICHA.presupuesto[a.presupuesto]||"—"}</dd>
+        <dt>Prioridad</dt><dd>${FICHA.prioridad[a.superpoder]||"—"}</dd>
+      </dl>
+    </div>
+    <div><p class="sec-title">Modelos que vale la pena ver</p><div class="chips">${p.ej.map(m=>`<span>${esc(m)}</span>`).join("")}</div></div>
+    <div><p class="sec-title">Tus afinidades</p><div class="bars">
+      ${r.orden.slice(0,3).map(k=>`<div class="bar"><span>${esc(PERFILES[k].n)}</span><span class="pct">${r.pct[k]}%</span><div class="track"><div class="fill" style="width:${r.pct[k]}%"></div></div></div>`).join("")}
+    </div></div>
+    ${S.contacto.tel?`<p class="lead">Gracias${S.contacto.nombre?", "+esc(S.contacto.nombre):""}. Un asesor te escribirá por WhatsApp con opciones para tu perfil.</p>`:""}
+    <div class="row"><button class="ghost" id="again">Volver a contestar</button></div>
+    <p class="note" id="status">${demo?"Modo demo: esta respuesta no se guarda. Configura Supabase para empezar a registrar.":"Guardando tu respuesta…"}</p>
+  </section>`;
+  document.getElementById("again").onclick=()=>{S.screen="intro";S.ans={};S.contacto={};S.res=null;render();};
+}
+
+function payload(){
+  const r=S.res, a=S.ans;
+  let src=null; try{src=new URLSearchParams(location.search).get("src");}catch(e){}
+  return {
+    build:CONFIG.APP_BUILD, origen:src,
+    respuestas:a,
+    perfil:r.orden[0], perfil_2:r.orden[1], afinidad:r.pct,
+    presupuesto:a.presupuesto||null, temperatura:TEMP[a.cuando]||null, pago:a.pago||null,
+    nombre:S.contacto.nombre||null, whatsapp:S.contacto.tel||null, consentimiento:!!S.contacto.ok
+  };
+}
+
+async function post(body){
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),10000);
+  try{
+    const res=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${CONFIG.TABLE}`,{method:"POST",signal:ctl.signal,
+      headers:{"apikey":CONFIG.SUPABASE_ANON_KEY,"Authorization":"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},
+      body:JSON.stringify(body)});
+    return res.ok;
+  }catch(e){return false;}finally{clearTimeout(t);}
+}
+const QKEY="encuesta_auto_pendientes";
+function cola(){try{return JSON.parse(localStorage.getItem(QKEY)||"[]");}catch(e){return [];}}
+function guardarCola(c){try{localStorage.setItem(QKEY,JSON.stringify(c.slice(-20)));}catch(e){}}
+
+async function enviar(){
+  if(!CONFIG.SUPABASE_URL || S.bot) return;
+  const st=document.getElementById("status"), body=payload();
+  const ok=await post(body);
+  if(ok){ if(st) st.textContent="Respuesta registrada."; }
+  else { guardarCola([...cola(),body]); if(st) st.textContent="Sin conexión estable. Tu respuesta se enviará la próxima vez que abras esta página."; }
+}
+async function reintentar(){
+  if(!CONFIG.SUPABASE_URL) return;
+  const c=cola(); if(!c.length) return;
+  const rest=[]; for(const b of c){ if(!(await post(b))) rest.push(b); }
+  guardarCola(rest);
+}
+
+function qr(){
+  const url = CONFIG.SURVEY_URL || location.href.split("#")[0];
+  const enIframe = (()=>{try{return window.self!==window.top;}catch(e){return true;}})();
+  app.innerHTML = `<section class="screen">
+    <span class="eyebrow">Para imprimir</span>
+    <h2>Escanea y descubre qué auto va contigo</h2>
+    <div class="qrbox" id="qr" role="img" aria-label="Código QR de la encuesta"></div>
+    <p class="mono">${esc(url)}</p>
+    ${enIframe?"":`<button class="btn" id="dl">Descargar PNG</button>`}
+    <p class="hint">Agrega <span class="mono">?src=nombre</span> a la URL para distinguir de qué cartel o página llegó cada respuesta.</p>
+    <div class="row"><button class="ghost" id="back">← Ir a la encuesta</button></div>
+  </section>`;
+  if(window.QRCode) new QRCode(document.getElementById("qr"),{text:url,width:560,height:560,colorDark:"#13202A",colorLight:"#FFFFFF",correctLevel:QRCode.CorrectLevel.M});
+  else document.getElementById("qr").textContent="No se pudo cargar el generador de QR.";
+  document.getElementById("back").onclick=()=>{history.replaceState(null,"",location.pathname+location.search);S.screen="intro";render();};
+  const dl=document.getElementById("dl");
+  if(dl) dl.onclick=()=>{const c=document.querySelector("#qr canvas"); if(!c) return; const a=document.createElement("a"); a.href=c.toDataURL("image/png"); a.download="qr-encuesta-auto.png"; a.click();};
+}
+
+document.getElementById("build").textContent="build "+CONFIG.APP_BUILD;
+document.getElementById("qrlink").onclick=e=>{e.preventDefault();S.screen="qr";render();};
+if(location.hash==="#qr") S.screen="qr";
+render(); reintentar();
+</script>
+
+</body>
+</html>
