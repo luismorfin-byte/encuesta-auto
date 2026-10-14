@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>[hidden]{display:none!important}html,body{height:100%}body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}</style>
-</head>
-<body>
 <title>¿Qué auto va contigo?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -120,6 +118,9 @@ input:focus-visible{outline:3px solid var(--accent);outline-offset:1px;border-co
 footer{margin-top:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 footer a{color:var(--muted)}
 </style>
+</head>
+<body>
+
 
 <div class="wrap">
   <div class="gauge" id="gauge" aria-hidden="true"><b>E</b><div class="segs" id="segs"></div><b>F</b></div>
@@ -131,38 +132,38 @@ footer a{color:var(--muted)}
 <script>
 /* ===================== CONFIGURACIÓN ===================== */
 const CONFIG = {
-  APP_BUILD: "2026.10.13-1",
-  BRAND: "Tu agencia",                 // nombre que ve el cliente
-  SUPABASE_URL: "https://jbljqomqzvqvngrhavqf.supabase.co/rest/v1/",                    // ej. https://xxxx.supabase.co  (vacío = modo demo, no guarda)
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibGpxb21xenZxdm5ncmhhdnFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzkyMTAsImV4cCI6MjEwNzUxNTIxMH0.kiFQjAGcqYRiA5I_BageVp5E0d1_xjBjVrtZjWkEaoY",               // anon key (solo permite INSERT por RLS)
+  APP_BUILD: "2026.10.13-5",
+  BRAND: "Tu agencia",                 // nombre que ve el cliente (ej. "Autos Colima Seminuevos")
+  SUPABASE_URL: "https://jbljqomqzvqvngrhavqf.supabase.co",   // solo el dominio, sin /rest/v1
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibGpxb21xenZxdm5ncmhhdnFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzkyMTAsImV4cCI6MjEwNzUxNTIxMH0.kiFQjAGcqYRiA5I_BageVp5E0d1_xjBjVrtZjWkEaoY",   // anon key: es pública por diseño, RLS solo permite INSERT
   TABLE: "encuestas_auto",
   SURVEY_URL: "",                      // URL pública final; si va vacío, el QR usa la URL actual
-  PRIVACY_URL: "#"                     // liga a tu aviso de privacidad (LFPDPPP)
+  PRIVACY_URL: "/aviso-de-privacidad"  // aviso incluido en el repo; cámbialo si el negocio ya tiene uno
 };
 
 /* ===================== PERFILES ===================== */
 const PERFILES = {
   urb:{n:"Urbano eficiente",   d:"Buscas un auto ágil, fácil de estacionar y barato de mantener para el día a día.",
-       ej:["Nissan Versa","Chevrolet Aveo","Kia K3","Mazda 2","BYD Dolphin Mini"]},
+       ej:["Nissan Versa","Volkswagen Vento","Chevrolet Aveo","Kia Rio","Mazda 2"]},
   fam:{n:"Familiar práctico",  d:"Espacio, seguridad y confort para moverte con los tuyos sin sacrificar confiabilidad.",
-       ej:["Honda CR-V","Toyota RAV4 Híbrida","Mazda CX-5","Kia Sportage","Hyundai Tucson"]},
+       ej:["Honda CR-V","Nissan X-Trail","Mazda CX-5","Kia Sportage","Toyota RAV4"]},
   tra:{n:"Trabajo y aventura", d:"Necesitas resistencia, capacidad de carga y tracción para cualquier camino.",
-       ej:["Toyota Hilux","Nissan Frontier","Ford Ranger","RAM 700","Jeep Wrangler"]},
+       ej:["Toyota Hilux","Nissan NP300","Ford Ranger","Ford Lobo","Jeep Wrangler"]},
   dep:{n:"Pasión al volante",  d:"Para ti manejar es el plan: respuesta del motor, manejo preciso y carretera.",
-       ej:["Mazda MX-5","Volkswagen Golf GTI","Ford Mustang","Toyota GR86","Mini Cooper S"]},
+       ej:["Volkswagen Golf GTI","Ford Mustang","Mazda MX-5","Mini Cooper S","Honda Civic Turbo"]},
   pre:{n:"Ejecutivo premium",  d:"Valoras diseño, refinamiento y estatus; pagas con gusto por la experiencia.",
-       ej:["BMW Serie 3","Mercedes-Benz GLC","Audi Q5","Volvo XC60","Lexus NX"]},
+       ej:["BMW Serie 3","Mercedes-Benz Clase C","Audi Q5","Volvo XC60","BMW X3"]},
   tec:{n:"Tecnológico electrificado", d:"Te mueven la eficiencia, las pantallas y la conectividad; estás abierto a marcas nuevas.",
-       ej:["BYD Song Plus","Tesla Model Y","MG4","Chirey Tiggo 7","GWM Haval H6 HEV"]}
+       ej:["Toyota Prius","BYD Dolphin","MG ZS","Chirey Tiggo 7","Tesla Model 3"]}
 };
 
 /* ===================== PREGUNTAS =====================
    w = puntos que suma cada opción a cada perfil. Sin w = solo informativa (calificación del lead). */
 const Q = [
  {id:"presupuesto", t:"¿Cuál es tu presupuesto real para el auto?", h:"Precio total aproximado, en pesos.", o:[
-  {k:"A",l:"Lo más accesible posible",s:"Hasta ~$400 mil, o mensualidades bajas",w:{urb:3,fam:1,tec:1}},
-  {k:"B",l:"Buena relación valor-precio",s:"Entre $400 y $800 mil",w:{fam:2,tec:2,tra:1,dep:1,urb:1}},
-  {k:"C",l:"Me quiero dar un gusto",s:"Más de $800 mil, gama alta o premium",w:{pre:3,dep:2,tra:1}}]},
+  {k:"A",l:"Lo más accesible posible",s:"Hasta ~$250 mil, o mensualidades bajas",w:{urb:3,fam:1,tec:1}},
+  {k:"B",l:"Buena relación valor-precio",s:"Entre $250 y $500 mil",w:{fam:2,tec:2,tra:1,dep:1,urb:1}},
+  {k:"C",l:"Me quiero dar un gusto",s:"Más de $500 mil, gama alta o premium",w:{pre:3,dep:2,tra:1}}]},
  {id:"uso", t:"¿Cuál será el uso principal del auto?", o:[
   {k:"A",l:"Ciudad diario",s:"Tráfico, ir al trabajo y estacionarme fácil",w:{urb:3,tec:1}},
   {k:"B",l:"Familia",s:"Niños, mascotas o mucho equipaje",w:{fam:3}},
@@ -214,7 +215,7 @@ const FICHA = {
   carroceria:{A:"Compacto / hatchback",B:"Sedán",C:"SUV",D:"Pick-up",E:"Deportivo / coupé"},
   motor:{A:"Híbrido o eléctrico",B:"4 cil. eficiente / turbo",C:"Alto desempeño"},
   transmision:{A:"Manual",B:"Automática",C:"Automática con paletas"},
-  presupuesto:{A:"Hasta ~$400 mil",B:"$400 – $800 mil",C:"Más de $800 mil"},
+  presupuesto:{A:"Hasta ~$250 mil",B:"$250 – $500 mil",C:"Más de $500 mil"},
   prioridad:{A:"Fiabilidad",B:"Tecnología",C:"Potencia",D:"Confort"}
 };
 const TEMP = {A:"caliente",B:"tibio",C:"frío",D:"frío"};
@@ -332,7 +333,7 @@ function resultado(){
         <dt>Prioridad</dt><dd>${FICHA.prioridad[a.superpoder]||"—"}</dd>
       </dl>
     </div>
-    <div><p class="sec-title">Modelos que vale la pena ver</p><div class="chips">${p.ej.map(m=>`<span>${esc(m)}</span>`).join("")}</div></div>
+    <div><p class="sec-title">Seminuevos que vale la pena ver</p><div class="chips">${p.ej.map(m=>`<span>${esc(m)}</span>`).join("")}</div></div>
     <div><p class="sec-title">Tus afinidades</p><div class="bars">
       ${r.orden.slice(0,3).map(k=>`<div class="bar"><span>${esc(PERFILES[k].n)}</span><span class="pct">${r.pct[k]}%</span><div class="track"><div class="fill" style="width:${r.pct[k]}%"></div></div></div>`).join("")}
     </div></div>
@@ -358,7 +359,8 @@ function payload(){
 async function post(body){
   const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),10000);
   try{
-    const res=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${CONFIG.TABLE}`,{method:"POST",signal:ctl.signal,
+    const base=CONFIG.SUPABASE_URL.replace(/\/+$/,"").replace(/\/rest\/v1$/,"");
+    const res=await fetch(`${base}/rest/v1/${CONFIG.TABLE}`,{method:"POST",signal:ctl.signal,
       headers:{"apikey":CONFIG.SUPABASE_ANON_KEY,"Authorization":"Bearer "+CONFIG.SUPABASE_ANON_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},
       body:JSON.stringify(body)});
     return res.ok;
@@ -383,7 +385,7 @@ async function reintentar(){
 }
 
 function qr(){
-  const url = CONFIG.SURVEY_URL || location.href.split("#")[0];
+  const url = (CONFIG.SURVEY_URL || (location.origin+location.pathname)) + location.search;
   const enIframe = (()=>{try{return window.self!==window.top;}catch(e){return true;}})();
   app.innerHTML = `<section class="screen">
     <span class="eyebrow">Para imprimir</span>
@@ -391,7 +393,7 @@ function qr(){
     <div class="qrbox" id="qr" role="img" aria-label="Código QR de la encuesta"></div>
     <p class="mono">${esc(url)}</p>
     ${enIframe?"":`<button class="btn" id="dl">Descargar PNG</button>`}
-    <p class="hint">Agrega <span class="mono">?src=nombre</span> a la URL para distinguir de qué cartel o página llegó cada respuesta.</p>
+    <p class="hint">Para un QR por cartel o página, abre esta pantalla como <span class="mono">/?src=nombre#qr</span>: cada respuesta guardará de dónde llegó.</p>
     <div class="row"><button class="ghost" id="back">← Ir a la encuesta</button></div>
   </section>`;
   if(window.QRCode) new QRCode(document.getElementById("qr"),{text:url,width:560,height:560,colorDark:"#13202A",colorLight:"#FFFFFF",correctLevel:QRCode.CorrectLevel.M});
