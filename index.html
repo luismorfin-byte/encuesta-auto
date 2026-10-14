@@ -109,7 +109,7 @@ input:focus-visible{outline:3px solid var(--accent);outline-offset:1px;border-co
 
 /* QR */
 .qrbox{background:#fff;padding:18px;border-radius:14px;align-self:center;border:1.5px solid var(--line)}
-.qrbox img,.qrbox canvas{display:block;width:min(70vw,280px);height:auto}
+.qrbox svg{display:block;width:min(70vw,280px);height:auto}
 .mono{font-family:var(--f-mono);font-size:13px;word-break:break-all;color:var(--muted)}
 
 .screen{display:flex;flex-direction:column;gap:22px;animation:in .28s ease-out both}
@@ -128,11 +128,11 @@ footer a{color:var(--muted)}
   <footer><span id="build"></span><a href="#qr" id="qrlink">QR para imprimir</a></footer>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/qrcode.js"></script>
 <script>
 /* ===================== CONFIGURACIÓN ===================== */
 const CONFIG = {
-  APP_BUILD: "2026.10.13-5",
+  APP_BUILD: "2026.10.13-6",
   BRAND: "Tu agencia",                 // nombre que ve el cliente (ej. "Autos Colima Seminuevos")
   SUPABASE_URL: "https://jbljqomqzvqvngrhavqf.supabase.co",   // solo el dominio, sin /rest/v1
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibGpxb21xenZxdm5ncmhhdnFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzkyMTAsImV4cCI6MjEwNzUxNTIxMH0.kiFQjAGcqYRiA5I_BageVp5E0d1_xjBjVrtZjWkEaoY",   // anon key: es pública por diseño, RLS solo permite INSERT
@@ -392,15 +392,20 @@ function qr(){
     <h2>Escanea y descubre qué auto va contigo</h2>
     <div class="qrbox" id="qr" role="img" aria-label="Código QR de la encuesta"></div>
     <p class="mono">${esc(url)}</p>
-    ${enIframe?"":`<button class="btn" id="dl">Descargar PNG</button>`}
-    <p class="hint">Para un QR por cartel o página, abre esta pantalla como <span class="mono">/?src=nombre#qr</span>: cada respuesta guardará de dónde llegó.</p>
+    ${enIframe?"":`<div class="row"><button class="btn" id="dlsvg">Descargar SVG (imprenta)</button><button class="ghost" id="dlpng">Descargar PNG</button></div>`}
+    <p class="hint">Para un QR por revista o cartel, abre esta pantalla como <span class="mono">/?src=nombre#qr</span>: cada respuesta guardará de dónde llegó.</p>
     <div class="row"><button class="ghost" id="back">← Ir a la encuesta</button></div>
   </section>`;
-  if(window.QRCode) new QRCode(document.getElementById("qr"),{text:url,width:560,height:560,colorDark:"#13202A",colorLight:"#FFFFFF",correctLevel:QRCode.CorrectLevel.M});
-  else document.getElementById("qr").textContent="No se pudo cargar el generador de QR.";
   document.getElementById("back").onclick=()=>{history.replaceState(null,"",location.pathname+location.search);S.screen="intro";render();};
-  const dl=document.getElementById("dl");
-  if(dl) dl.onclick=()=>{const c=document.querySelector("#qr canvas"); if(!c) return; const a=document.createElement("a"); a.href=c.toDataURL("image/png"); a.download="qr-encuesta-auto.png"; a.click();};
+  if(!window.qrcode){document.getElementById("qr").textContent="No se pudo cargar el generador de QR.";return;}
+  const q=qrcode(0,"M"); q.addData(url,"Byte"); q.make();
+  document.getElementById("qr").innerHTML=q.createSvgTag({cellSize:10,margin:40,scalable:true});
+  const svgFijo=q.createSvgTag({cellSize:10,margin:40});
+  const nombre="qr-encuesta-auto"+(new URLSearchParams(location.search).get("src")?"-"+new URLSearchParams(location.search).get("src").replace(/[^a-z0-9-]/gi,""):"");
+  const bajar=(blob,ext)=>{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre+"."+ext;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);};
+  const bs=document.getElementById("dlsvg"), bp=document.getElementById("dlpng");
+  if(bs) bs.onclick=()=>bajar(new Blob([svgFijo],{type:"image/svg+xml"}),"svg");
+  if(bp) bp.onclick=()=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=c.height=2000;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,2000,2000);x.imageSmoothingEnabled=false;x.drawImage(img,0,0,2000,2000);c.toBlob(b=>bajar(b,"png"),"image/png");};img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svgFijo);};
 }
 
 document.getElementById("build").textContent="build "+CONFIG.APP_BUILD;
